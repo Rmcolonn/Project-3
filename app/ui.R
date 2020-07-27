@@ -145,7 +145,7 @@ ui <- dashboardPage(
       tabPanel("Test",
                  mainPanel(
                    verbatimTextOutput(outputId = "TestModel2"),
-                   dataTableOutput(outputId = "TestModel3")
+                   verbatimTextOutput(outputId = "TestModel3")
                  ))),
       class = "span7")),
         

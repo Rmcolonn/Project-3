@@ -136,7 +136,7 @@ server <- function(input, output, session) {
   
   
  
-  output$TestModel3 <- renderDataTable({
+  output$TestModel3 <- renderPrint({
     if(input$model == "K Nearest Neighbors"){
       predict(knn(), data = baseballTest())
 
