@@ -90,23 +90,42 @@ server <- function(input, output, session) {
   
   
   ##Modeling stuff
-  #REgression
-  modelData <- reactive(projectData %>% filter(PitcherTeam == input$team2))
+  #Test/Train Data
   
-  lm1 <- reactive({lm(reformulate(input$IndVar, input$DepVar), data = modelData())})
+
+  
+  set.seed(123)
+  modelData <- reactive({ projectData %>% filter( PitcherTeam == input$team2)})
+  baseballTrain <- reactive({modelData() %>% sample_n(nrow(modelData())*.8)})
+  baseballTest <- reactive({modelData() %>% dplyr::setdiff(train)})
+
+  
+  
+  #Regression
+  
+  
+  lm1 <- reactive({lm(reformulate(input$IndVar, input$DepVar), data = baseballTrain())})
+
   
   output$DepPrint <- renderPrint({input$DepVar})
   output$IndPrint <- renderPrint({input$IndVar})
   output$RegSum <- renderPrint({summary(lm1())})
 
+  
+  
+  output$TestModel2 <- renderPrint({
+    if(input$model == "Linear Regression"){
+      predict(lm1(), data = baseballTest())
+      
+    }})
 
 
   #Classification Tree
-  knn <- reactive({caret::train(reformulate(input$IndVar2, input$DepVar2), data = modelData(), 
+  knn <- reactive({caret::train(reformulate(input$IndVar2, input$DepVar2), data = baseballTrain(), 
                                       method = "knn" , 
-                                      trControl = trainControl(method = "repeatedcv", 
+                                      trControl = (caret::trainControl(method = "repeatedcv", 
                                                                number = as.numeric(input$number),
-                                                               repeats = as.numeric(input$repeats)), 
+                                                               repeats = as.numeric(input$repeats))), 
                                                                preProcess = c("center", "scale"),
                                 tuneGrid = expand.grid(k = c(2:30)))
     })
@@ -114,7 +133,15 @@ server <- function(input, output, session) {
   output$DepPrint2 <- renderPrint({input$DepVar2})
   output$IndPrint2 <- renderPrint({input$IndVar2})
   output$RegSum2 <- renderPrint({(knn())})
+  
+  
+ 
+  output$TestModel3 <- renderDataTable({
+    if(input$model == "K Nearest Neighbors"){
+      predict(knn(), data = baseballTest())
 
+    }})
+  
   
   
   #Data tab
@@ -130,7 +157,7 @@ server <- function(input, output, session) {
   # Downloadable csv of selected dataset ----
   output$downloadData <- downloadHandler(
     filename = function() {
-      paste(input$dataset, ".csv", sep = "")
+      paste(input$pitcher5, ".csv", sep = "")
     },
     content = function(file) {
       write.csv(datasetInput(), file, row.names = FALSE)
